@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <title>Task 3</title>
+</head>
+
+<body>
+	<p> <label></label>
+        <input class="message" size="20"> </p>
+        <p> <button class="send">Отправить</button> </p>
+	<input id="chat" class="text" size="20"> </p>
+        <p> <button class="geo">Геолокация</button> </p>
+
+</body>
+
+<script>
+
+        
+
+const wsUri = "wss://demo.piesocket.com";                 //"wss://echo.websocket.org/";
+    const messageInput = document.querySelector('.message');
+    const sendBtn = document.querySelector('.send');
+    const textWindow = document.querySelector('.chat');
+    const geoBtn = document.querySelector('.geo');
+    
+    const placeholder = 'Здесь вводится текст сообщения';
+    
+    // создаем объект вебсокет и описываем его поведение
+var apiKey = 'NCDCXiIbgcw1KKCSJqFQZIfv3GsuebuCMahzR7JS';
+        var roomId = 1;
+    let websocket = new WebSocket(`wss://demo.piesocket.com/v3/${roomId}?api_key=${apiKey}&notify_self`); 
+    
+    websocket.onopen = function(evt) {
+        console.log("CONNECTED");
+    };
+    
+    websocket.onerror = function(evt) {
+        console.log(evt.data)
+    };
+    
+    websocket.onmessage = function(evt) {
+      console.log(evt.data);
+      addMessage(evt.data, 'flex-start');
+    };
+    
+    //добавляем обработчик события при нажатии кнопки отправки сообщения
+    sendBtn.addEventListener('click', () => {
+        let message = messageInput.value;
+        websocket.send(message);
+        addMessage(message);
+        messageInput.value = ''
+    })
+    
+    //функция для добавления сообщений в чат
+    function addMessage(message, position='flex-end') {
+        let element = `
+            <p class='message-window' style='align-self: ${position}'>
+                ${message}
+            </p>
+        `;
+        let chat = textWindow.innerHTML;
+        textWindow.innerHTML = chat + element;
+    }
+    
+    
+    //описываем поведение при определении гео-позиции
+    const error = () => {
+        let error = "Позиция не может быть определена" 
+        addMessage(error);
+    }
+    
+    const success = (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+    
+        let link = `https://www.openstreetmap.org/#map=18/${latitude}/${longitude}`;
+        addLink(link)
+    }
+    
+    
+    //функция для вставки ссылки в чат
+    function addLink(link) {
+        let element = `
+        <a  href='${link}'
+            target='_blank'
+            style='text-decoration: none;'
+            >
+            Гео-позиция
+            </a>
+        `;
+        let chat = textWindow.innerHTML;
+        textWindow.innerHTML = chat + element;
+    };
+    
+    
+    //добавляем обработчик события при нажатии кнопки гео-позиции
+    geoBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            console.log("You can't use geolocation")
+        } else {
+            navigator.geolocation.getCurrentPosition(success, error);
+        };
+    });
+</script>
+
+</html>

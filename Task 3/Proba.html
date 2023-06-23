@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test PieSocket</title>
+    <style>
+        #chatFormContainer {
+            text-align: center;
+            position: fixed;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+        }
+
+        #chatFormContainer input {
+            display: inline-block;
+            width: 90%;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chatLog">
+
+    </div>
+    <div id="chatFormContainer">
+        <form id="chatForm">
+            <input id="chatMessage" placeholder="Type  message and press enter..." type="text">
+	    <p> <button class="geo">Geolocation</button> </p>
+        </form>
+    </div>
+    <script>
+        var username = `user_${getRandomNumber()}`
+        var apiKey = 'NCDCXiIbgcw1KKCSJqFQZIfv3GsuebuCMahzR7JS';
+        var roomId = 1;
+        var piesocket = new WebSocket(`wss://demo.piesocket.com/v3/${roomId}?api_key=${apiKey}&notify_self`);
+
+        var chatLog = document.getElementById('chatLog');
+        var chatForm = document.getElementById('chatForm');
+        chatForm.addEventListener("submit", sendMessage);
+	const geoBtn = document.querySelector('.geo');
+
+        piesocket.onopen = function() {
+            console.log(`Websocket connected`);
+            piesocket.send(JSON.stringify({
+                event: 'new_joining',
+                sender: username,
+            }));
+        }
+        piesocket.onmessage = function(message) {
+            var payload = JSON.parse(message.data);
+            console.log(payload);
+
+            if (payload.sender == username) {
+                payload.sender = "You";
+            }
+
+            if (payload.event == "new_message") {
+
+                //Handle new message
+                chatLog.insertAdjacentHTML('afterend', `<div> ${payload.sender}: ${payload.text} <div>`);
+
+            } else if (payload.event == 'new_joining') {
+
+                //Handle new joining
+                chatLog.insertAdjacentHTML('afterend', `<div> ${payload.sender} joined the chat<div>`);
+
+            }
+        }
+
+        function getRandomNumber() {
+            return Math.floor(Math.random() * 1000);
+        }
+
+        function sendMessage(e) {
+            e.preventDefault();
+
+            var message = document.getElementById('chatMessage').value;
+
+            piesocket.send(JSON.stringify({
+                event: 'new_message',
+                sender: username,
+                text: message
+            }));
+        }
+//описываем поведение при определении гео-позиции
+    const error = () => {
+        let error = "Позиция не может быть определена" 
+        addMessage(error);
+    }
+    
+    const success = (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+    
+        let link = `https://www.openstreetmap.org/#map=18/${latitude}/${longitude}`;
+        addLink(link)
+    }
+    
+    
+    //функция для вставки ссылки в чат
+    function addLink(link) {
+        let element = `
+        <a  href='${link}'
+            target='_blank'
+            style='text-decoration: none;'
+            >
+            Гео-позиция
+            </a>
+        `;
+        let chat = textWindow.innerHTML;
+        textWindow.innerHTML = chat + element;
+    };
+geoBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            console.log("You can't use geolocation")
+        } else {
+            navigator.geolocation.getCurrentPosition(success, error);
+        };
+    });
+    </script>
+</body>
+</html>
